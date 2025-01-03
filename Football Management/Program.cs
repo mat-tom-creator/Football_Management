@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Intrinsics.X86;
 
 // 1. Define Separate Interfaces for Each Class
 
@@ -31,18 +32,18 @@ public interface ILeagueService
 
 public interface INewsService
 {
-    void GetLatestNews();
+    void GetNewsByPreference(string preference);
 }
+
 
 public interface IFanInteractionService
 {
-    void SubmitComment(string comment);
-    void ShowComments();
+    void Interact(string type, string input);
 }
 
 public interface IVideoService
 {
-    void GetMatchHighlights(string matchId);
+    void FetchVideo(string type);
 }
 
 public interface ISearchService
@@ -115,42 +116,123 @@ public sealed class LeagueService : ILeagueService
     }
 }
 
-public sealed class NewsService : INewsService
+public sealed class TrendingNewsService : INewsService
 {
-    public void GetLatestNews()
+    public void GetNewsByPreference(string preference)
     {
-        Console.WriteLine("Latest Football News:");
-        Console.WriteLine("Cristiano Ronaldo breaks another record!");
-        Console.WriteLine("Premier League: Upcoming Clash Between Giants");
-    }
-}
-
-public sealed class FanInteractionService : IFanInteractionService
-{
-    private readonly List<string> _comments = new();
-
-    public void SubmitComment(string comment)
-    {
-        _comments.Add(comment);
-        Console.WriteLine("Comment Submitted!");
-    }
-
-    public void ShowComments()
-    {
-        Console.WriteLine("Fan Comments:");
-        foreach (var comment in _comments)
+        Console.WriteLine($"Fetching trending news based on preference: {preference}");
+        if (preference == "sports")
         {
-            Console.WriteLine($"- {comment}");
+            Console.WriteLine("Trending News: Ronaldo scores a hat-trick in the derby!");
+        }
+        else if (preference == "politics")
+        {
+            Console.WriteLine("Trending News: Elections 2024—latest updates.");
+        }
+        else
+        {
+            Console.WriteLine("Trending News: Climate action summit gains momentum.");
         }
     }
 }
 
-public sealed class VideoService : IVideoService
+public sealed class PersonalizedNewsService : INewsService
 {
-    public void GetMatchHighlights(string matchId)
+    public void GetNewsByPreference(string preference)
     {
-        Console.WriteLine($"Fetching highlights for match ID: {matchId}");
-        Console.WriteLine("Highlights: Goal by Rashford at 45', Goal by Havertz at 60'");
+        Console.WriteLine($"Fetching personalized news for preference: {preference}");
+        if (preference == "football")
+        {
+            Console.WriteLine("Personalized News: Your favorite team won the match!");
+        }
+        else if (preference == "technology")
+        {
+            Console.WriteLine("Personalized News: AI breakthroughs in 2025.");
+        }
+        else
+        {
+            Console.WriteLine("Personalized News: Top stories you might like.");
+        }
+    }
+}
+
+public sealed class FanPollService : IFanInteractionService
+{
+    public void Interact(string type, string input)
+    {
+        Console.WriteLine($"Processing fan poll of type: {type}");
+        if (type == "vote" && input == "teamA")
+        {
+            Console.WriteLine("Vote registered for Team A.");
+        }
+        else if (type == "vote" && input == "teamB")
+        {
+            Console.WriteLine("Vote registered for Team B.");
+        }
+        else
+        {
+            Console.WriteLine("Invalid poll type or input.");
+        }
+    }
+}
+
+public sealed class FanTriviaService : IFanInteractionService
+{
+    public void Interact(string type, string input)
+    {
+        Console.WriteLine($"Processing trivia of type: {type}");
+        if (type == "question" && input == "correct")
+        {
+            Console.WriteLine("Correct answer! You earn 10 points.");
+        }
+        else if (type == "question" && input == "wrong")
+        {
+            Console.WriteLine("Wrong answer. Better luck next time!");
+        }
+        else
+        {
+            Console.WriteLine("Invalid trivia type or input.");
+        }
+    }
+}
+
+public sealed class ShortHighlightVideoService : IVideoService
+{
+    public void FetchVideo(string type)
+    {
+        Console.WriteLine($"Fetching short highlight video of type: {type} for match ID:");
+        if (type == "goal")
+        {
+            Console.WriteLine("Highlight: Rashford's stunning goal in the 45th minute!");
+        }
+        else if (type == "save")
+        {
+            Console.WriteLine("Highlight: De Gea's crucial save in the 70th minute!");
+        }
+        else
+        {
+            Console.WriteLine("No highlights found for the specified type.");
+        }
+    }
+}
+
+public sealed class FullMatchReplayVideoService : IVideoService
+{
+    public void FetchVideo(string type)
+    {
+        Console.WriteLine($"Fetching full match replay video of type: {type} for match ID: ");
+        if (type == "full")
+        {
+            Console.WriteLine($"Replaying the full match for ID:");
+        }
+        else if (type == "extended")
+        {
+            Console.WriteLine($"Replaying extended highlights for match ID: ");
+        }
+        else
+        {
+            Console.WriteLine("Invalid type for match replay.");
+        }
     }
 }
 
@@ -164,6 +246,30 @@ public sealed class SearchService : ISearchService
         Console.WriteLine("Premier League");
     }
 }
+
+public sealed class UserAuthenticationService
+{
+    private readonly Dictionary<string, string> _userCredentials = new();
+
+    public bool Authenticate(string username, string password)
+    {
+        return _userCredentials.ContainsKey(username) && _userCredentials[username] == password;
+    }
+
+    public bool CreateUser(string username, string password)
+    {
+        if (_userCredentials.ContainsKey(username))
+        {
+            Console.WriteLine("User already exists.");
+            return false;
+        }
+
+        _userCredentials[username] = password;
+        Console.WriteLine("User created successfully.");
+        return true;
+    }
+}
+
 
 // 3. Decorators for Additional Functionality
 
@@ -210,14 +316,64 @@ public class Program
 {
     public static void Main(string[] args)
     {
+        UserAuthenticationService authService = new UserAuthenticationService();
+        bool loggedIn = false;
+        string currentUser = string.Empty;
+
+        Console.WriteLine("Welcome to the Football Service System!");
+
+        while (!loggedIn)
+        {
+            Console.WriteLine("\n1. Login");
+            Console.WriteLine("2. Create User");
+            Console.WriteLine("0. Exit");
+            Console.Write("Enter your choice: ");
+            string authChoice = Console.ReadLine();
+
+            switch (authChoice)
+            {
+                case "1":
+                    Console.Write("Please enter your username: ");
+                    string username = Console.ReadLine();
+                    Console.Write("Please enter your password: ");
+                    string password = Console.ReadLine();
+
+                    if (authService.Authenticate(username, password))
+                    {
+                        Console.WriteLine("Login successful! Welcome, " + username + "!");
+                        loggedIn = true;
+                        currentUser = username;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid username or password. Please try again.");
+                    }
+                    break;
+
+                case "2":
+                    Console.Write("Enter a username to create: ");
+                    string newUsername = Console.ReadLine();
+                    Console.Write("Enter a password: ");
+                    string newPassword = Console.ReadLine();
+
+                    authService.CreateUser(newUsername, newPassword);
+                    break;
+
+                case "0":
+                    Console.WriteLine("Exiting program...");
+                    return;
+
+                default:
+                    Console.WriteLine("Invalid choice. Please try again.");
+                    break;
+            }
+        }
+
         ILiveMatchService liveMatchService = new LiveMatchService();
         IFixturesService fixturesService = new FixturesService();
         ITeamService teamService = new TeamService();
         IPlayerService playerService = new PlayerService();
         ILeagueService leagueService = new LeagueService();
-        INewsService newsService = new NewsService();
-        IFanInteractionService fanService = new FanInteractionService();
-        IVideoService videoService = new VideoService();
         ISearchService searchService = new SearchService();
 
         bool running = true;
@@ -262,18 +418,98 @@ public class Program
                     leagueService.GetLeagueStandings();
                     break;
                 case "6":
-                    newsService.GetLatestNews();
+                    Console.WriteLine("Enter the Preference : ");
+                    String preference = Console.ReadLine();
+                    if (preference == "sports")
+                    {
+                        INewsService newsService = new TrendingNewsService();
+                        newsService.GetNewsByPreference(preference);
+                    }
+                    else if (preference == "politics")
+                    {
+                        INewsService newsService = new TrendingNewsService();
+                        newsService.GetNewsByPreference(preference);
+                    }
+                    else if (preference == "football")
+                    {
+                        INewsService newsService = new PersonalizedNewsService();
+                        newsService.GetNewsByPreference(preference);
+                    }
+                    else if (preference == "technology")
+                    {
+                        INewsService newsService = new PersonalizedNewsService();
+                        newsService.GetNewsByPreference(preference);
+                    }
+                    else if (preference == "") 
+                    {
+                        INewsService newsService = new TrendingNewsService();
+                        newsService.GetNewsByPreference(preference);
+                        INewsService newsService1 = new PersonalizedNewsService();
+                        newsService1.GetNewsByPreference(preference);
+                    }
                     break;
                 case "7":
-                    Console.Write("Enter a comment: ");
-                    string comment = Console.ReadLine();
-                    fanService.SubmitComment(comment);
-                    fanService.ShowComments();
+                    Console.WriteLine("Enter the type and input");
+                    string type = Console.ReadLine();
+                    string input = Console.ReadLine();
+                    if (type == "vote" && input == "teamA")
+                    {
+                        IFanInteractionService poll = new FanPollService();
+                        poll.Interact(type, input);
+                    }
+                    else if (type == "vote" && input == "teamB")
+                    {
+                        IFanInteractionService poll = new FanPollService();
+                        poll.Interact(type, input);
+                    }
+                    else if (type == "question" && input == "correct")
+                    {
+                        IFanInteractionService poll = new FanTriviaService();
+                        poll.Interact(type, input);
+                    }
+                    else if (type == "question" && input == "wrong")
+                    {
+                        IFanInteractionService poll = new FanTriviaService();
+                        poll.Interact(type, input);
+                    }
+                    else if (type == " " && input == " ")
+                    {
+                        IFanInteractionService poll = new FanPollService();
+                        poll.Interact(type, input);
+                        IFanInteractionService poll1 = new FanTriviaService();
+                        poll1.Interact(type, input);
+                    }
                     break;
                 case "8":
-                    Console.Write("Enter match ID: ");
-                    string matchId = Console.ReadLine();
-                    videoService.GetMatchHighlights(matchId);
+                    Console.WriteLine("Enter the type");
+                    string type1 = Console.ReadLine();
+                    if (type1 == "goal")
+                    {
+                        IVideoService videoService = new ShortHighlightVideoService();
+                        videoService.FetchVideo(type1);
+                    }
+                    else if (type1 == "save")
+                    {
+                        IVideoService videoService = new ShortHighlightVideoService();
+                        videoService.FetchVideo(type1);
+                    }
+                    if (type1 == "full")
+                    {
+                        IVideoService videoService = new FullMatchReplayVideoService();
+                        videoService.FetchVideo(type1);
+                    }
+                    else if (type1 == "extended")
+                    {
+                        IVideoService videoService = new FullMatchReplayVideoService();
+                        videoService.FetchVideo(type1);
+                    }
+                    else if (type1 == " ")
+                    {
+                        IVideoService videoService = new ShortHighlightVideoService();
+                        videoService.FetchVideo(type1);
+                        IVideoService videoService1 = new FullMatchReplayVideoService();
+                        videoService1.FetchVideo(type1);
+                    }
                     break;
                 case "9":
                     Console.Write("Enter search query: ");
